@@ -76,7 +76,7 @@ jobs:
 
       - name: Update Pull Request
         if: env.RUN_TF == 'true' && github.event_name == 'pull_request'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         env:
           FORMAT: "terraform\n${{ steps.format.outputs.stdout }}"
           PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
