@@ -52,7 +52,7 @@ provider "aws" {
 #               EOF
 # }
 
-/* resource "aws_security_group" "web-sg" {
+ resource "aws_security_group" "web-sg" {
   name = "${random_pet.sg.id}-sg"
   ingress {
     from_port   = 8080
@@ -67,7 +67,7 @@ provider "aws" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-} */
+}
 
 # output "web-address" {
 #   value = "${aws_instance.web.public_dns}:8080"
