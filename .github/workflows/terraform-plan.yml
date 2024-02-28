@@ -1,80 +1,149 @@
-name: "Terraform Plan"
+name: "Terraform format, validate, plan check"
 
 on:
   pull_request:
+    branches: [ master ]
 
 env:
   TF_CLOUD_ORGANIZATION: "b3nsh-org"
-  TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
-  TF_WORKSPACE: "api-driven"
-  CONFIG_DIRECTORY: "./"
+  TF_WORKSPACE: api-driven
 
 jobs:
   terraform:
-    if: github.repository != 'hashicorp-education/learn-terraform-github-actions'
-    name: "Terraform Plan"
+    name: 'Terraform Plan'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
+    defaults:
+      run:
+        working-directory: ./
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Upload Configuration
-        uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.0
-        id: plan-upload
         with:
-          workspace: ${{ env.TF_WORKSPACE }}
-          directory: ${{ env.CONFIG_DIRECTORY }}
-          speculative: true
+          fetch-depth: 0
 
-      - name: Create Plan Run
-        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.0.0
-        id: plan-run
+      - name: Checkout modified profile
+        run: |
+          unset PROFILES
+          while read line
+          do
+            PROFILES+=("$line")
+          done <<< "$(git diff-tree --name-only --no-commit-id $(git merge-base remotes/origin/master HEAD) ${{ github.event.pull_request.head.sha }} -r |
+          grep -i '^terraform' | awk '{split($0,path,"/"); printf "%s\n", path[2]}' | sort | uniq)"
+          [[ "${PROFILES[*]}" =~ "api-driven" || "${PROFILES[*]}" =~ "modules" ]] && echo "RUN_TF=true" >> $GITHUB_ENV || echo "RUN_TF=false" >> $GITHUB_ENV
+
+      - name: Setup Node
+        if: env.RUN_TF == 'true'
+        uses: actions/setup-node@v2
         with:
-          workspace: ${{ env.TF_WORKSPACE }}
-          configuration_version: ${{ steps.plan-upload.outputs.configuration_version_id }}
-          plan_only: true
+          node-version: '14'
 
-      - name: Get Plan Output
-        uses: hashicorp/tfc-workflows-github/actions/plan-output@v1.0.0
-        id: plan-output
+      - name: Setup Terraform
+        if: env.RUN_TF == 'true'
+        uses: hashicorp/setup-terraform@v2
         with:
-          plan: ${{ fromJSON(steps.plan-run.outputs.payload).data.relationships.plan.data.id }}
+          terraform_version: 1.2.9
+          cli_config_credentials_hostname: '127.0.0.1'
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: Update PR
+      - name: Terraform Format
+        if: env.RUN_TF == 'true'
+        id: format
+        run: |
+          cd ../
+          terraform fmt -check --recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        if: env.RUN_TF == 'true'
+        id: init
+        run: terraform init
+
+      - name: Terraform Validate
+        if: env.RUN_TF == 'true'
+        id: validate
+        run: |
+          terraform validate -no-color
+          echo "::set-output name=stdout::$(terraform validate -no-color)"
+        continue-on-error: true
+
+      - name: Terraform Plan
+        if: env.RUN_TF == 'true' && github.event_name == 'pull_request'
+        id: plan
+        run: |
+          terraform plan -no-color -input=false
+        continue-on-error: true
+
+      - name: Update Pull Request
+        if: env.RUN_TF == 'true' && github.event_name == 'pull_request'
         uses: actions/github-script@v6
-        id: plan-comment
+        env:
+          FORMAT: "terraform\n${{ steps.format.outputs.stdout }}"
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // 1. Retrieve existing bot comments for the PR
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const botComment = comments.find(comment => {
-              return comment.user.type === 'Bot' && comment.body.includes('Terraform Cloud Plan Output')
-            });
-            const output = `#### Terraform Cloud Plan Output
-               \`\`\`
-               Plan: ${{ steps.plan-output.outputs.add }} to add, ${{ steps.plan-output.outputs.change }} to change, ${{ steps.plan-output.outputs.destroy }} to destroy.
-               \`\`\`
-               [Terraform Cloud Plan](${{ steps.plan-run.outputs.run_link }})
-               `;
-            // 3. Delete previous comment so PR timeline makes sense
-            if (botComment) {
-              github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-              });
-            }
+            const output = `
+
+            ### [api-driven]
+            #### Terraform Format and Style 🖌\`${{ steps.format.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+
+            <details><summary>Show Format</summary>
+
+            \`\`\`\n
+            ${{ process.env.FORMAT }}
+            \`\`\`
+
+            </details>
+
+            <details><summary>Validation Output</summary>
+
+            \`\`\`\n
+            ${{ steps.validate.outputs.stdout }}
+            \`\`\`
+
+            </details>
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`\n
+            plan_log="tfplan_log_$(date -u +%Y%m%d).log"
+            echo "${process.env.PLAN}" > "$plan_log" 2>&1
+            length=$(echo "${process.env.PLAN}" | wc -c)
+
+            if [[ $length -gt 100000 ]]; then
+              aws s3 cp "$plan_log" "s3://tf-bucket/tf-plan-logs/"
+
+              tail -c 65000 "$plan_log" > truncated_plan.log
+              echo "Truncated Plan result: "
+              cat truncated_plan.log
+              echo "Please see complete log: s3://tf-bucket/tf-plan-logs/$plan_log"
+            else
+              ${process.env.PLAN}
+            fi
+            \`\`\`
+
+            </details>
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: output
             });
+
+
+      - name: Terraform Format Status
+        if: steps.format.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Validate Status
+        if: steps.validate.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
