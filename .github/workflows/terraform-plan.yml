@@ -87,15 +87,19 @@ jobs:
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
         
             <details><summary>Show Format</summary>
-            \`\`\`
+
+            \`\`\`n
             ${process.env.FORMAT}
             \`\`\`
+
             </details>
         
             <details><summary>Show Plan</summary>
-            \`\`\`
+            
+            \`\`\`n
             ${planOutput}
             \`\`\`
+            
             </details>
             `;
 
