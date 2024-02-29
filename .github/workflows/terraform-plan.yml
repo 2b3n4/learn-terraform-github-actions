@@ -86,15 +86,7 @@ jobs:
             <details><summary>Show Format</summary>
 
             \`\`\`\n
-            ${{ process.env.FORMAT }}
-            \`\`\`
-
-            </details>
-
-            <details><summary>Validation Output</summary>
-
-            \`\`\`\n
-            ${{ steps.validate.outputs.stdout }}
+            ${process.env.FORMAT}
             \`\`\`
 
             </details>
