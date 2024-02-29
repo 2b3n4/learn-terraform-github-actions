@@ -87,51 +87,21 @@ jobs:
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
         
             <details><summary>Show Format</summary>
-            \`\`\`
+
+            \`\`\`n
             ${process.env.FORMAT}
             \`\`\`
+
             </details>
         
             <details><summary>Show Plan</summary>
-            \`\`\`
+            
+            \`\`\`n
             ${planOutput}
             \`\`\`
+            
             </details>
             `;
-
-      # - name: Update Pull Request
-      #   if: github.event_name == 'pull_request'
-      #   uses: actions/github-script@v6
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     FORMAT: "${{ steps.format.outputs.stdout }}"
-      #     PLAN: "${{ steps.plan.outputs.stdout }}"
-      #   with:
-      #     script: |
-      #       const output = `
-
-      #       ### [api-driven]
-      #       #### Terraform Format and Style 🖌\`${{ steps.format.outcome }}\`
-      #       #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-      #       #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-      #       #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-
-      #       <details><summary>Show Format</summary>
-
-      #       \`\`\`\n
-      #       ${process.env.FORMAT}
-      #       \`\`\`
-
-      #       </details>
-
-      #       <details><summary>Show Plan</summary>
-
-      #       \`\`\`\n
-      #       ${process.env.PLAN}
-      #       \`\`\`
-
-      #       </details>
-      #       `;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
