@@ -52,7 +52,7 @@ resource "random_pet" "sg" {}
 #               EOF
 # }
 
- resource "aws_security_group" "web-sg" {
+resource "aws_security_group" "web-sg" {
   name = "${random_pet.sg.id}-sg"
   ingress {
     from_port   = 8080
