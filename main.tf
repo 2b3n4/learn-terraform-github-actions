@@ -5,7 +5,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "4.52.0"
+      version = "3.74.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -17,9 +17,12 @@ terraform {
 
 provider "aws" {
   region = "us-west-2"
+  profile = "default"
+  access_key = "AKIAW4NOKIYGUD2WHKFY"
+  secret_key = "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"
 }
 
-# resource "random_pet" "sg" {}
+resource "random_pet" "sg" {}
 
 # data "aws_ami" "ubuntu" {
 #   most_recent = true
@@ -52,7 +55,7 @@ provider "aws" {
 #               EOF
 # }
 
- resource "aws_security_group" "web-sg" {
+resource "aws_security_group" "web-sg" {
   name = "${random_pet.sg.id}-sg"
   ingress {
     from_port   = 8080
@@ -72,3 +75,4 @@ provider "aws" {
 # output "web-address" {
 #   value = "${aws_instance.web.public_dns}:8080"
 # }
+ 
