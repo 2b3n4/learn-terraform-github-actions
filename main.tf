@@ -16,8 +16,8 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-west-2"
-  profile = "default"
+  region     = "us-west-2"
+  profile    = "default"
   access_key = "AKIAW4NOKIYGUD2WHKFY"
   secret_key = "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"
 }
@@ -70,7 +70,7 @@ resource "aws_security_group" "web-sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-} 
+}
 
 # output "web-address" {
 #   value = "${aws_instance.web.public_dns}:8080"
