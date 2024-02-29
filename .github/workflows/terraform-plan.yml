@@ -70,7 +70,7 @@ jobs:
         run: |
           echo "PLAN<<${{ env.DELIMITER }}" >> $GITHUB_ENV
           echo '[maybe truncated]' >> $GITHUB_ENV
-          tail --bytes=10 <<'${{ env.DELIMITER }}' >> $GITHUB_ENV
+          tail --bytes=10000 <<'${{ env.DELIMITER }}' >> $GITHUB_ENV
           ${{ format('{0}{1}', steps.plan.outputs.stderr, steps.plan.outputs.stdout) }}
           ${{ env.DELIMITER }}
           echo >> $GITHUB_ENV
