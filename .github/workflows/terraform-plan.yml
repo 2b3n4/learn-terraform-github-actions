@@ -25,13 +25,11 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node
-        if: env.RUN_TF == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '14'
 
       - name: Setup Terraform
-        if: env.RUN_TF == 'true'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.2.9
@@ -39,7 +37,6 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       - name: Terraform Format
-        if: env.RUN_TF == 'true'
         id: format
         run: |
           cd ../
@@ -47,12 +44,10 @@ jobs:
         continue-on-error: true
 
       - name: Terraform Init
-        if: env.RUN_TF == 'true'
         id: init
         run: terraform init
 
       - name: Terraform Validate
-        if: env.RUN_TF == 'true'
         id: validate
         run: |
           terraform validate -no-color
@@ -60,14 +55,14 @@ jobs:
         continue-on-error: true
 
       - name: Terraform Plan
-        if: env.RUN_TF == 'true' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         id: plan
         run: |
           terraform plan -no-color -input=false
         continue-on-error: true
 
       - name: Update Pull Request
-        if: env.RUN_TF == 'true' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v6
         env:
           FORMAT: "terraform\n${{ steps.format.outputs.stdout }}"
