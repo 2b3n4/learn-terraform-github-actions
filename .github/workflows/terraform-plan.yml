@@ -102,20 +102,7 @@ jobs:
             <details><summary>Show Plan</summary>
 
             \`\`\`\n
-            plan_log="tfplan_log_$(date -u +%Y%m%d).log"
-            echo "${process.env.PLAN}" > "$plan_log" 2>&1
-            length=$(echo "${process.env.PLAN}" | wc -c)
-
-            if [[ $length -gt 100000 ]]; then
-              aws s3 cp "$plan_log" "s3://tf-bucket/tf-plan-logs/"
-
-              tail -c 65000 "$plan_log" > truncated_plan.log
-              echo "Truncated Plan result: "
-              cat truncated_plan.log
-              echo "Please see complete log: s3://tf-bucket/tf-plan-logs/$plan_log"
-            else
-              ${process.env.PLAN}
-            fi
+            ${process.env.PLAN}
             \`\`\`
 
             </details>
