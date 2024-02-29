@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          node-version: '20'
+
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -36,7 +36,7 @@ jobs:
           terraform_version: 1.7.4
           cli_config_credentials_hostname: 'app.terraform.io'
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-          terraform_wrapper: true
+          terraform_wrapper: false
 
       - name: Terraform Format
         id: format
@@ -71,7 +71,6 @@ jobs:
           FORMAT: "${{ steps.format.outputs.stdout }}"
           PLAN: "${{ steps.plan.outputs.stdout }}"
         with:
-          node-version: '20'
           script: |
             const output = `
 
