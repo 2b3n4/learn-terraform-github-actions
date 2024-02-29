@@ -23,16 +23,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout modified profile
-        run: |
-          unset PROFILES
-          while read line
-          do
-            PROFILES+=("$line")
-          done <<< "$(git diff-tree --name-only --no-commit-id $(git merge-base remotes/origin/master HEAD) ${{ github.event.pull_request.head.sha }} -r |
-          grep -i '^terraform' | awk '{split($0,path,"/"); printf "%s\n", path[2]}' | sort | uniq)"
-          [[ "${PROFILES[*]}" =~ "api-driven" || "${PROFILES[*]}" =~ "modules" ]] && echo "RUN_TF=true" >> $GITHUB_ENV || echo "RUN_TF=false" >> $GITHUB_ENV
-
       - name: Setup Node
         if: env.RUN_TF == 'true'
         uses: actions/setup-node@v2
@@ -44,7 +34,7 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.2.9
-          cli_config_credentials_hostname: '127.0.0.1'
+          cli_config_credentials_hostname: 'app.terraform.io'
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       - name: Terraform Format
