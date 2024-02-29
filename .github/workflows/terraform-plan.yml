@@ -67,7 +67,7 @@ jobs:
         run: echo "DELIMITER=$(uuidgen)" >> $GITHUB_ENV
 
       - name: truncate terraform plan result
-      run: |
+        run: |
         echo "PLAN<<${{ env.DELIMITER }}" >> $GITHUB_ENV
         echo '[maybe truncated]' >> $GITHUB_ENV
         tail --bytes=10 <<'${{ env.DELIMITER }}' >> $GITHUB_ENV
