@@ -65,7 +65,7 @@ jobs:
       
       - name: truncate terraform plan result
         run: |
-          echo "${{ steps.plan.outputs.stdout }}" | jq -rc 'gsub("Refreshing state"; "")' >> $GITHUB_ENV
+          echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Update Pull Request
