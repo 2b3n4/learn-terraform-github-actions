@@ -6,7 +6,6 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "4.52.0"
-      profile = "default"
     }
     random = {
       source  = "hashicorp/random"
@@ -18,6 +17,7 @@ terraform {
 
 provider "aws" {
   region = "us-west-2"
+  profile = "default"
 }
 
 resource "random_pet" "sg" {}
