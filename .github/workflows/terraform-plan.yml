@@ -67,8 +67,8 @@ jobs:
         run: |
           echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' > terraform_plan_output.txt
           echo "EOF" >> terraform_plan_output.txt
-          length=$(terraform_plan_output.txt | wc -c)
-          echo $length
+          length = $(terraform_plan_output.txt | wc -c)
+          echo $(length)
 
      
       - name: Update Pull Request
