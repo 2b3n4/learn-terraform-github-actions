@@ -74,6 +74,7 @@ jobs:
 
             tail -c 5 terraform_plan_output.txt > truncated_terraform_plan_output.txt
           else
+            "${{ steps.plan.outputs.stdout }}"
           fi
      
       - name: Update Pull Request
