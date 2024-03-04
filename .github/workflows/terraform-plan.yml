@@ -24,15 +24,15 @@ jobs:
         with:
           fetch-depth: 0
 
+        strategy:
+          matrix:
+          node-version: ['14.x', '16.x', '18.x']
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '14'
-          cache: 'npm'
-        
-        - run: npm ci
-        - run: npm test
+          node-version: ${{ matrix.node-version }}
+
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
