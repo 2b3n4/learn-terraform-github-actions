@@ -65,11 +65,11 @@ jobs:
       
       - name: truncate terraform plan result
         run: |
-          const fs = require('fs');
+          #const fs = require('fs');
           echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' > plan_log.txt
           echo "EOF" >> plan_log.txt
 
-          fs.truncateSync('plan_log.txt', 18);
+          #fs.truncateSync('plan_log.txt', 18);
 
      
       - name: Update Pull Request
