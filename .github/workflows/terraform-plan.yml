@@ -66,9 +66,10 @@ jobs:
       - name: truncate terraform plan result
         run: |
           const fs = require('fs');
-          const plan_log = fs.readFileSync('"tfplan_log_$(date -u +%Y%m%d).log"
-          echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' > ${plan_log}
-          echo "EOF" >> ${plan_log}
+          echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' > plan_log.txt
+          echo "EOF" >> plan_log.txt
+
+          fs.truncateSync('plan_log.txt', 18);
 
      
       - name: Update Pull Request
@@ -80,7 +81,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const planOutput = fs.readFileSync('${plan_log}', 'utf8');
+            const planOutput = fs.readFileSync('plan_log.txt', 'utf8');
         
             const output = `
             ### [api-driven]
