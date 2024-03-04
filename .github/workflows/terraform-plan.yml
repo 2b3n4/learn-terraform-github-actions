@@ -65,7 +65,8 @@ jobs:
       
       - name: truncate terraform plan result
         run: |
-          const plan_log = "tfplan_log_$(date -u +%Y%m%d).log"
+          const fs = require('fs');
+          const plan_log = fs.readFileSync('"tfplan_log_$(date -u +%Y%m%d).log"
           echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' > ${plan_log}
           echo "EOF" >> ${plan_log}
 
