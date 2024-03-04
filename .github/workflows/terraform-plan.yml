@@ -99,7 +99,7 @@ jobs:
             <details><summary>Show Plan</summary>
             
             \`\`\`n
-            ${planOutput}
+            ${plantruncateOutput}
             \`\`\`
             
             </details>
