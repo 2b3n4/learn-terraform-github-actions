@@ -68,9 +68,6 @@ jobs:
           #const fs = require('fs');
           echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' > plan_log.txt
           echo "EOF" >> plan_log.txt
-
-          #fs.truncateSync('plan_log.txt', 18);
-
      
       - name: Update Pull Request
         if: github.event_name == 'pull_request'
@@ -82,6 +79,7 @@ jobs:
           script: |
             const fs = require('fs');
             const planOutput = fs.readFileSync('plan_log.txt', 'utf8');
+            const plantruncateOutput = fs.truncateSync('plan_log.txt', 18);
         
             const output = `
             ### [api-driven]
