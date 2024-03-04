@@ -85,7 +85,7 @@ jobs:
           script: |
             const fs = require('fs');
             const planOutput = fs.readFileSync('plan_log.txt', 'utf8');
-            const plantruncateOutput = fs.truncateSync('plan_log.txt', 18);
+            const plantruncateOutput = fs.truncateSync('plan_log.txt', 65000);
             const planSummary = fs.readFileSync('plan_log.txt', 'utf8');
         
             const output = `
