@@ -31,7 +31,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd learn-terraform-github-actions/learn-terraform-github-actions
+          cd /home/runner/work/learn-terraform-github-actions/learn-terraform-github-actions
           npm install
           npm test
 
