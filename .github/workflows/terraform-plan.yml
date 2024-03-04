@@ -66,8 +66,8 @@ jobs:
       - name: truncate terraform plan result
         run: |
           plan_log="tfplan_log_$(date -u +%Y%m%d).log"
-          echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' > $plan_log
-          echo "EOF" >> $plan_log
+          echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' > ${plan_log}
+          echo "EOF" >> ${plan_log}
 
      
       - name: Update Pull Request
