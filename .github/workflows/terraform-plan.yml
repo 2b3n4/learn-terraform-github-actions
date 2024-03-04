@@ -65,10 +65,9 @@ jobs:
       
       - name: truncate terraform plan result
         run: |
+        shell: bash
           echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' > terraform_plan_output.txt
           echo "EOF" >> terraform_plan_output.txt
-          var length = $(terraform_plan_output.txt | wc -c)
-          echo $length
 
      
       - name: Update Pull Request
