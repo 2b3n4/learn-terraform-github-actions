@@ -82,6 +82,15 @@ jobs:
             const fs = require('fs');
             const displayDecision = fs.readFileSync('display_decision.txt', 'utf8').trim();
             const planLogFileName = 'truncated_plan.log';
+
+            for (let i = 0; i < 10; i++) {
+                if (fs.existsSync(planLogFileName)) {
+                  break;
+                }
+                console.log(`Waiting for ${planLogFileName} to be created...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+
             const planSummary = displayDecision === 'truncated'
               ? fs.readFileSync(planLogFileName, 'utf8')
               : fs.readFileSync(planLogFileName, 'utf8');
