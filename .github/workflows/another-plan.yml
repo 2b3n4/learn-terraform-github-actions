@@ -68,7 +68,7 @@ jobs:
           echo "EOF" >> "$plan_log"
           length=$(wc -c < "$plan_log")
 
-          if [[ $length -gt 10 ]]; then
+          if [[ $length -gt 1 ]]; then
             tail -c 6 "$plan_log" > truncated_plan.log
             echo "Truncated Plan result: "
             cat truncated_plan.log
