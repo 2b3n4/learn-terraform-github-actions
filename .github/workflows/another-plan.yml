@@ -62,13 +62,14 @@ jobs:
           const displayDecision = fs.readFileSync('display_decision.txt', 'utf8').trim();
           const planLogFileName = 'truncated_plan.log';
 
-          // Read the plan output based on the previous decision
-          const planSummary = displayDecision === 'truncated'
-            ? fs.readFileSync(planLogFileName, 'utf8').replace(/\nEOF$/, '')
-            : fs.readFileSync(planLogFileName, 'utf8');
+          # Read the plan output based on the previous decision
+          planSummary=$(displayDecision === 'truncated'
+            ? cat "$planLogFileName" | sed -e '$ s/^/EOF\n/' | head -n -1
+            : cat "$planLogFileName"
+          )
 
-          // Prepare the comment body
-          const output = `
+          # Prepare the comment body
+          output=$(cat <<-END
             ### [api-driven]
             #### Terraform Format and Style 🖌\`${{ steps.format.outcome }}\`
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
@@ -86,15 +87,17 @@ jobs:
               ${planSummary}
               \`\`\`
             </details>
-          `;
+          END
+          )
 
-          // Create a comment on the pull request
+          # Create a comment on the pull request
           github.rest.issues.createComment({
             issue_number: context.payload.pull_request.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
             body: output
           });
+        if: github.event_name == 'pull_request' && success()
 
       - name: Terraform Format Status
         if: steps.format.outcome == 'failure'
