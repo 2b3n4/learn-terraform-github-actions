@@ -37,30 +37,13 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_wrapper: true
 
-      - name: Terraform Format
-        id: format
-        run: |
-          terraform fmt -check --recursive
-        continue-on-error: true
-
-      - name: Terraform Init
-        id: init
-        run: terraform init
-
-      - name: Terraform Validate
-        id: validate
-        run: |
-          terraform validate -no-color
-          echo "::set-output name=stdout::$(terraform validate -no-color)"
-        continue-on-error: true
-
       - name: Truncate Terraform Plan Result and Update Pull Request
         id: truncate-plan-update-pr
         run: |
           plan_log="tfplan_log_$(date -u +%Y%m%d).log"
           echo "${{ steps.plan.outputs.stdout }}" > "$plan_log"
           length=$(stat -c%s "$plan_log")
-      
+
           # Decide whether to display truncated or full plan and store the decision in a file
           if [[ $length -gt 100000 ]]; then
             tail -c 65000 "$plan_log" > truncated_plan.log
@@ -73,17 +56,17 @@ jobs:
             cat "$plan_log"
             echo "full" > display_decision.txt
           fi
-      
+
           # Read the decision and plan summary
           const fs = require('fs');
           const displayDecision = fs.readFileSync('display_decision.txt', 'utf8').trim();
           const planLogFileName = 'truncated_plan.log';
-      
+
           // Read the plan output based on the previous decision
           const planSummary = displayDecision === 'truncated'
             ? fs.readFileSync(planLogFileName, 'utf8').replace(/\nEOF$/, '')
             : fs.readFileSync(planLogFileName, 'utf8');
-      
+
           // Prepare the comment body
           const output = `
             ### [api-driven]
@@ -91,20 +74,20 @@ jobs:
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-      
+
             <details><summary>Show Format</summary>
               \`\`\`n
               ${process.env.FORMAT}
               \`\`\`
             </details>
-      
+
             <details><summary>Show Plan</summary>
               \`\`\`n
               ${planSummary}
               \`\`\`
             </details>
           `;
-      
+
           // Create a comment on the pull request
           github.rest.issues.createComment({
             issue_number: context.payload.pull_request.number,
@@ -112,5 +95,15 @@ jobs:
             repo: context.repo.repo,
             body: output
           });
-        if: github.event_name == 'pull_request' && success()
-      
+
+      - name: Terraform Format Status
+        if: steps.format.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Validate Status
+        if: steps.validate.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
