@@ -60,10 +60,12 @@ jobs:
           echo "${{ steps.plan.outputs.stdout }}" > "$plan_log"
           length=$(stat -c%s "$plan_log")
 
+          # Decide whether to display truncated or full plan and store the decision in a file
           if [[ $length -gt 100000 ]]; then
             tail -c 65000 "$plan_log" > truncated_plan.log
             echo "Truncated Plan result: "
             cat truncated_plan.log
+            echo "truncated" > display_decision.txt
           else
             cat "$plan_log"
             echo "full" > display_decision.txt
@@ -80,14 +82,13 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const currentDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const planLogFileName = `tfplan_log_${currentDate}.log`;
             const displayDecision = fs.readFileSync('display_decision.txt', 'utf8').trim();
+            const planLogFileName = 'truncated_plan.log';
 
             // Read the plan output based on the previous decision
             const planSummary = displayDecision === 'truncated'
-              ? fs.readFileSync('truncated_plan.log', 'utf8').replace(/\nEOF$/, '')
-              : fs.readFileSync(planLogFileName, 'utf8').replace(/\nEOF$/, '');
+              ? fs.readFileSync(planLogFileName, 'utf8').replace(/\nEOF$/, '')
+              : fs.readFileSync(planLogFileName, 'utf8');
 
             // Prepare the comment body
             const output = `
