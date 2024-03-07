@@ -65,13 +65,12 @@ jobs:
             tail -c 65000 "$plan_log" > truncated_plan.log
             echo "Truncated Plan result: "
             cat truncated_plan.log
-            # Add 'EOF' to the end of the truncated plan file
-            echo -e "\nEOF" >> truncated_plan.log
             echo "truncated" > display_decision.txt
           else
             cat "$plan_log"
             echo "full" > display_decision.txt
           fi
+
 
       - name: Update Pull Request
         if: github.event_name == 'pull_request'
@@ -83,10 +82,8 @@ jobs:
             const fs = require('fs');
             const displayDecision = fs.readFileSync('display_decision.txt', 'utf8').trim();
             const planLogFileName = 'truncated_plan.log';
-
-            // Read the plan output based on the previous decision
             const planSummary = displayDecision === 'truncated'
-              ? fs.readFileSync(planLogFileName, 'utf8').replace(/\nEOF$/, '')
+              ? fs.readFileSync(planLogFileName, 'utf8')
               : fs.readFileSync(planLogFileName, 'utf8');
 
             // Prepare the comment body
