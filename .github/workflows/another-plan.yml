@@ -59,7 +59,7 @@ jobs:
           plan_log="tfplan_log_$(date -u +%Y%m%d).log"
           echo "${{ steps.plan.outputs.stdout }}" > "$plan_log"
           length=$(stat -c%s "$plan_log")
-      
+
           if [[ $length -gt 100000 ]]; then
             tail -c 65000 "$plan_log" > truncated_plan.log
             echo "Truncated Plan result: "
@@ -67,10 +67,9 @@ jobs:
           else
             cat "$plan_log"
           fi
-      
+
           # Add 'EOF' to the end of the truncated plan file
           echo "EOF" >> truncated_plan.log
-      
 
       - name: Update Pull Request
         if: github.event_name == 'pull_request'
