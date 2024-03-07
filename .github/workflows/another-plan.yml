@@ -84,8 +84,6 @@ jobs:
             const fs = require('fs');
             const displayDecision = fs.readFileSync('display_decision.txt', 'utf8').trim();
             const planLogFileName = 'truncated_plan.log';
-
-            // Read the plan output based on the previous decision
             const planSummary = displayDecision === 'truncated'
               ? fs.readFileSync(planLogFileName, 'utf8').replace(/\nEOF$/, '')
               : fs.readFileSync(planLogFileName, 'utf8');
