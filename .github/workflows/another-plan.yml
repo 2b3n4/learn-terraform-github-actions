@@ -69,9 +69,9 @@ jobs:
           length=$(echo "$plan_log" | wc -c)
 
           if [[ $length -gt 100000 ]]; then
-            tail -c 65000 "$plan_log" > truncated_plan.log
+            tail -c 65000 "$plan_log" > "$plan_log"
             echo "Truncated Plan result: "
-            cat truncated_plan.log
+            cat "$plan_log"
           else
             cat "$plan_log"
           fi
@@ -86,7 +86,7 @@ jobs:
             const fs = require('fs');
 
             // Read the truncated plan output
-            const planSummary = fs.readFileSync('truncated_plan.log', 'utf8');
+            const planSummary = fs.readFileSync('{{$plan_log}}', 'utf8');
 
             // Prepare the comment body
             const output = `
