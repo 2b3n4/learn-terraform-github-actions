@@ -86,7 +86,7 @@ jobs:
             const fs = require('fs');
 
             // Read the truncated plan output
-            const planSummary = fs.readFileSync('{{$plan_log}}', 'utf8');
+            const planSummary = fs.readFileSync('{$plan_log}', 'utf8');
 
             // Prepare the comment body
             const output = `
