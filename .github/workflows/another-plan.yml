@@ -66,6 +66,7 @@ jobs:
             cat truncated_plan.log
           else
             cat "$plan_log"
+            echo "full" > display_decision.txt
           fi
 
           # Add 'EOF' to the end of the truncated plan file
