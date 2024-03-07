@@ -66,7 +66,7 @@ jobs:
           plan_log="tfplan_log_$(date -u +%Y%m%d).log"
           echo "${{ steps.plan.outputs.stdout }}" > "$plan_log"
           echo "EOF" >> "$plan_log"
-          length=$(echo "$plan_log" | wc -c)
+          length=$(wc -c < "$plan_log")
 
           if [[ $length -gt 10 ]]; then
             tail -c 6 "$plan_log" > truncated_plan.log
