@@ -69,9 +69,9 @@ jobs:
           length=$(echo "$plan_log" | wc -c)
 
           if [[ $length -gt 100000 ]]; then
-            tail -c 65000 "$plan_log" > "$plan_log"
+            tail -c 65000 "$plan_log" > truncated_plan.log
             echo "Truncated Plan result: "
-            cat "$plan_log"
+            cat truncated_plan.log
           else
             cat "$plan_log"
           fi
@@ -86,7 +86,7 @@ jobs:
             const fs = require('fs');
 
             // Read the truncated plan output
-            const planSummary = fs.readFileSync('$plan_log', 'utf8');
+            const planSummary = fs.readFileSync('truncated_plan.log', 'utf8');
 
             // Prepare the comment body
             const output = `
@@ -115,7 +115,7 @@ jobs:
 
             // Create a comment on the pull request
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: output
