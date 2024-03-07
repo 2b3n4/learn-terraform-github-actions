@@ -58,15 +58,19 @@ jobs:
         run: |
           plan_log="tfplan_log_$(date -u +%Y%m%d).log"
           echo "${{ steps.plan.outputs.stdout }}" > "$plan_log"
-          echo "EOF" >> "$plan_log"
           length=$(stat -c%s "$plan_log")
-
-          # Decide whether to display truncated or full plan and store the decision in a file
+      
           if [[ $length -gt 100000 ]]; then
-            echo "truncated" > display_decision.txt
+            tail -c 65000 "$plan_log" > truncated_plan.log
+            echo "Truncated Plan result: "
+            cat truncated_plan.log
           else
-            echo "full" > display_decision.txt
+            cat "$plan_log"
           fi
+      
+          # Add 'EOF' to the end of the truncated plan file
+          echo "EOF" >> truncated_plan.log
+      
 
       - name: Update Pull Request
         if: github.event_name == 'pull_request'
@@ -82,8 +86,8 @@ jobs:
 
             // Read the plan output based on the previous decision
             const planSummary = displayDecision === 'truncated'
-              ? fs.readFileSync('truncated_plan.log', 'utf8')
-              : fs.readFileSync(planLogFileName, 'utf8');
+              ? fs.readFileSync('truncated_plan.log', 'utf8').replace(/\nEOF$/, '')
+              : fs.readFileSync(planLogFileName, 'utf8').replace(/\nEOF$/, '');
 
             // Prepare the comment body
             const output = `
