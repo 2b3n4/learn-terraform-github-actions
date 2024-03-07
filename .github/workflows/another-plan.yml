@@ -54,8 +54,8 @@ jobs:
           echo "::set-output name=stdout::$(terraform validate -no-color)"
         continue-on-error: true
 
-      - name: Truncate Terraform Plan Result
-        id: truncate-plan
+      - name: Truncate Terraform Plan Result and Update Pull Request
+        id: truncate-plan-update-pr
         run: |
           plan_log="tfplan_log_$(date -u +%Y%m%d).log"
           echo "${{ steps.plan.outputs.stdout }}" > "$plan_log"
@@ -74,48 +74,43 @@ jobs:
             echo "full" > display_decision.txt
           fi
       
-      - name: Update Pull Request
+          # Read the decision and plan summary
+          const fs = require('fs');
+          const displayDecision = fs.readFileSync('display_decision.txt', 'utf8').trim();
+          const planLogFileName = 'truncated_plan.log';
+      
+          // Read the plan output based on the previous decision
+          const planSummary = displayDecision === 'truncated'
+            ? fs.readFileSync(planLogFileName, 'utf8').replace(/\nEOF$/, '')
+            : fs.readFileSync(planLogFileName, 'utf8');
+      
+          // Prepare the comment body
+          const output = `
+            ### [api-driven]
+            #### Terraform Format and Style 🖌\`${{ steps.format.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+      
+            <details><summary>Show Format</summary>
+              \`\`\`n
+              ${process.env.FORMAT}
+              \`\`\`
+            </details>
+      
+            <details><summary>Show Plan</summary>
+              \`\`\`n
+              ${planSummary}
+              \`\`\`
+            </details>
+          `;
+      
+          // Create a comment on the pull request
+          github.rest.issues.createComment({
+            issue_number: context.payload.pull_request.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          });
         if: github.event_name == 'pull_request' && success()
-        uses: actions/github-script@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          script: |
-            const fs = require('fs');
-            const displayDecision = fs.readFileSync('display_decision.txt', 'utf8').trim();
-            const planLogFileName = 'truncated_plan.log';
-      
-            // Read the plan output based on the previous decision
-            const planSummary = displayDecision === 'truncated'
-              ? fs.readFileSync(planLogFileName, 'utf8').replace(/\nEOF$/, '')
-              : fs.readFileSync(planLogFileName, 'utf8');
-      
-            // Prepare the comment body
-            const output = `
-              ### [api-driven]
-              #### Terraform Format and Style 🖌\`${{ steps.format.outcome }}\`
-              #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-              #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-              #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-      
-              <details><summary>Show Format</summary>
-                \`\`\`n
-                ${process.env.FORMAT}
-                \`\`\`
-              </details>
-      
-              <details><summary>Show Plan</summary>
-                \`\`\`n
-                ${planSummary}
-                \`\`\`
-              </details>
-            `;
-      
-            // Create a comment on the pull request
-            github.rest.issues.createComment({
-              issue_number: context.payload.pull_request.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            });
       
