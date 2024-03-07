@@ -66,10 +66,10 @@ jobs:
           plan_log="tfplan_log_$(date -u +%Y%m%d).log"
           echo "${{ steps.plan.outputs.stdout }}" > "$plan_log"
           echo "EOF" >> "$plan_log"
-          length=$(wc -c < "$plan_log")
+          length=$(stat -c%s "$plan_log")
 
-          if [[ $length -gt 1 ]]; then
-            tail -c 6 "$plan_log" > truncated_plan.log
+          if [[ $length -gt 100000 ]]; then
+            tail -c 65000 "$plan_log" > truncated_plan.log
             echo "Truncated Plan result: "
             cat truncated_plan.log
           else
@@ -109,7 +109,7 @@ jobs:
             <details><summary>Show Plan</summary>
 
             \`\`\`n
-            ${planSummary}
+            ${length > 100000 ? fs.readFileSync('truncated_plan.log', 'utf8') : planSummary}
             \`\`\`
 
             </details>
@@ -122,3 +122,15 @@ jobs:
               repo: context.repo.repo,
               body: output
             });
+
+      - name: Terraform Format Status
+        if: steps.format.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Validate Status
+        if: steps.validate.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
