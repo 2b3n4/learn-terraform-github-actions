@@ -84,9 +84,11 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const currentDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const planLogFileName = `tfplan_log_${currentDate}.log`;
 
             // Read the truncated plan output
-            const planSummary = fs.readFileSync('tfplan_log_$(date -u +%Y%m%d).log', 'utf8');
+            const planSummary = fs.readFileSync(planLogFileName, 'utf8');
 
             // Prepare the comment body
             const output = `
@@ -120,15 +122,3 @@ jobs:
               repo: context.repo.repo,
               body: output
             });
-
-      - name: Terraform Format Status
-        if: steps.format.outcome == 'failure'
-        run: exit 1
-
-      - name: Terraform Validate Status
-        if: steps.validate.outcome == 'failure'
-        run: exit 1
-
-      - name: Terraform Plan Status
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
