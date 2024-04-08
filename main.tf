@@ -22,7 +22,7 @@ provider "aws" {
   secret_key = ""
 }
 
-resource "random_pet" "sg" {}
+resource "random_pet" "sg" {} 
 
 # data "aws_ami" "ubuntu" {
 #   most_recent = true

@@ -37,61 +37,32 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_wrapper: true
 
-      - name: Terraform Format
-        id: format
-        run: |
-          terraform fmt -check --recursive
-        continue-on-error: true
-
-      - name: Terraform Init
-        id: init
-        run: terraform init
-
-      - name: Terraform Validate
-        id: validate
-        run: |
-          terraform validate -no-color
-          echo "::set-output name=stdout::$(terraform validate -no-color)"
-        continue-on-error: true
-
-      - name: Terraform Plan
-        if: github.event_name == 'pull_request'
-        id: plan
-        run: |
-          terraform plan -no-color -input=false
-        continue-on-error: true
-
-      - name: Truncate Terraform Plan Result
+      - name: Truncate Terraform Plan Result and Update Pull Request
+        id: truncate-plan-update-pr
         run: |
           plan_log="tfplan_log_$(date -u +%Y%m%d).log"
           echo "${{ steps.plan.outputs.stdout }}" > "$plan_log"
-          echo "EOF" >> "$plan_log"
-          length=$(echo "$plan_log" | wc -c)
+          length=$(stat -c%s "$plan_log")
 
-          if [[ $length -gt 100000 ]]; then
+          if [ $length -gt 100000 ]; then
             tail -c 65000 "$plan_log" > truncated_plan.log
             echo "Truncated Plan result: "
             cat truncated_plan.log
+            echo -e "\nEOF" >> truncated_plan.log
+            echo "truncated" > display_decision.txt
           else
             cat "$plan_log"
+            echo "full" > display_decision.txt
           fi
 
-      - name: Update Pull Request
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          script: |
-            const fs = require('fs');
-            const currentDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const planLogFileName = `tfplan_log_${currentDate}.log`;
+          # Check if truncated_plan.log exists before attempting to read it
+          if [ -f truncated_plan.log ]; then
+            planSummary=$(cat truncated_plan.log | sed -e '$ s/^/EOF\n/' | head -n -1)
+          else
+            planSummary="Unable to find truncated_plan.log"
+          fi
 
-            // Read the truncated plan output
-            const planSummary = fs.readFileSync(planLogFileName, 'utf8');
-
-            // Prepare the comment body
-            const output = `
+          output=$(cat <<-END
             ### [api-driven]
             #### Terraform Format and Style 🖌\`${{ steps.format.outcome }}\`
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
@@ -99,26 +70,35 @@ jobs:
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
 
             <details><summary>Show Format</summary>
-
-            \`\`\`n
-            ${process.env.FORMAT}
-            \`\`\`
-
+              <pre>
+${process.env.FORMAT}
+              </pre>
             </details>
 
             <details><summary>Show Plan</summary>
-
-            \`\`\`n
-            ${planSummary}
-            \`\`\`
-
+              <pre>
+${planSummary}
+              </pre>
             </details>
-            `;
+          END
+          )
 
-            // Create a comment on the pull request
-            github.rest.issues.createComment({
-              issue_number: context.payload.pull_request.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            });
+          github.rest.issues.createComment({
+            issue_number: context.payload.pull_request.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          });
+        if: github.event_name == 'pull_request' && success()
+
+      - name: Terraform Format Status
+        if: steps.format.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Validate Status
+        if: steps.validate.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
