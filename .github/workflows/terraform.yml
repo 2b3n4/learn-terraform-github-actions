@@ -1,0 +1,124 @@
+name: "Terraform format, validate, plan check"
+
+on:
+  pull_request:
+    branches: [ main ]
+
+env:
+  TF_CLOUD_ORGANIZATION: "b3nsh-org"
+  TF_WORKSPACE: api-driven
+  TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
+  CONFIG_DIRECTORY: "./"
+
+jobs:
+  terraform:
+    name: 'Terraform Plan'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.4
+          cli_config_credentials_hostname: 'app.terraform.io'
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          terraform_wrapper: true
+
+      - name: Terraform Format
+        id: format
+        run: |
+          cd ../
+          terraform fmt -check --recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Validate
+        id: validate
+        run: |
+          terraform validate -no-color
+          echo "::set-output name=stdout::$(terraform validate -no-color)"
+        continue-on-error: true
+
+      - name: Terraform Plan
+        if: github.event_name == 'pull_request'
+        id: plan
+        run: |
+          terraform plan -no-color -input=false
+        continue-on-error: true
+      
+      - name: truncate terraform plan result
+        run: |
+          echo "${{ steps.plan.outputs.stdout }}" | awk '!/Refreshing state/' > terraform_plan_output.txt
+          echo "EOF" >> terraform_plan_output.txt
+     
+      - name: Update Pull Request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORMAT: "${{ steps.format.outputs.stdout }}"
+        with:
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('terraform_plan_output.txt', 'utf8');
+        
+            const output = `
+            ### [api-driven]
+            #### Terraform Format and Style 🖌\`${{ steps.format.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+        
+            <details><summary>Show Format</summary>
+
+            \`\`\`n
+            ${process.env.FORMAT}
+            \`\`\`
+
+            </details>
+        
+            <details><summary>Show Plan</summary>
+            
+            \`\`\`n
+            ${planOutput}
+            \`\`\`
+            
+            </details>
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+
+      - name: Terraform Format Status
+        if: steps.format.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Validate Status
+        if: steps.validate.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
