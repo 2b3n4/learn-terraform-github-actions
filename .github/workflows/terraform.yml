@@ -1,4 +1,4 @@
-name: "Terraform format, validate, plan check"
+name: "Terraform format, validate, plan check working"
 
 on:
   pull_request:
